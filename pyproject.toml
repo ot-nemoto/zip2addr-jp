@@ -6,21 +6,22 @@ build-backend = "setuptools.build_meta"
 name = "zip2addr-jp"
 version = "0.0.0"
 description = "Lookup Japanese addresses from postal codes using Japan Post data."
-authors = [ { name = "", email = "" } ]
+authors = [ { name = "ot-nemoto", email = "nemoto@opentone.co.jp" } ]
 readme = "README.md"
 requires-python = ">=3.12"
 keywords = ["postal","zipcode","japan","address"]
 
+dependencies = []
+
 [project.scripts]
 zip2addr = "zip2addr.cli:main"
-
-[project.dependencies]
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [project.optional-dependencies]
 test = ["pytest"]
+
 [tool.ruff]
 # Exclude a variety of commonly ignored directories.
 exclude = [

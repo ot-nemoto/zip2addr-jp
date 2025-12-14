@@ -10,12 +10,15 @@ import sys
 
 
 def create_db(csv_path: str, out_db: str):
+    # Recreate DB from scratch to ensure full replace semantics
     conn = sqlite3.connect(out_db)
     cur = conn.cursor()
+    cur.execute("DROP TABLE IF EXISTS postal")
     cur.execute(
         """
-        CREATE TABLE IF NOT EXISTS postal (
-            zipcode TEXT PRIMARY KEY,
+        CREATE TABLE postal (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            zipcode TEXT,
             jis_code TEXT,
             old_postal_code TEXT,
             pref_kana TEXT,
@@ -33,7 +36,8 @@ def create_db(csv_path: str, out_db: str):
         )
         """
     )
-    cur.execute("DELETE FROM postal")
+    # create index on zipcode for fast lookup
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_postal_zipcode ON postal(zipcode)")
     with open(csv_path, newline="", encoding="utf-8") as fh:
         reader = csv.reader(fh)
         for row in reader:
@@ -61,7 +65,7 @@ def create_db(csv_path: str, out_db: str):
             change_reason = int(val(14)) if val(14).isdigit() else None
 
             cur.execute(
-                "INSERT OR REPLACE INTO postal(zipcode, jis_code, old_postal_code, pref_kana, city_kana, town_kana, prefecture, city, town, multiple_postal, koaza, chome, multiple_town, update_status, change_reason) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                "INSERT INTO postal(zipcode, jis_code, old_postal_code, pref_kana, city_kana, town_kana, prefecture, city, town, multiple_postal, koaza, chome, multiple_town, update_status, change_reason) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 (
                     postal,
                     jis,

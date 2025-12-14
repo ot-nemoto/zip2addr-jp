@@ -43,6 +43,27 @@ def lookup(postal_code: str, db_path: Optional[str] = None) -> Optional[Zip2Addr
         return Zip2Addr.from_row(row)
 
 
+def lookup_all(postal_code: str, db_path: Optional[str] = None) -> list[Zip2Addr]:
+    """Return all matching rows for the postal code as a list of Zip2Addr."""
+    if not postal_code:
+        return []
+    key = _normalize_postal(postal_code)
+    db = db_path or _get_db_path()
+    if not os.path.exists(db):
+        return []
+    results: list[Zip2Addr] = []
+    with sqlite3.connect(db) as conn:
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT zipcode, jis_code, old_postal_code, pref_kana, city_kana, town_kana, prefecture, city, town, multiple_postal, koaza, chome, multiple_town, update_status, change_reason FROM postal WHERE zipcode = ?",
+            (key,),
+        )
+        rows = cur.fetchall()
+        for r in rows:
+            results.append(Zip2Addr.from_row(r))
+    return results
+
+
 class Zip2AddrService:
     """Service wrapper for DB path and caching."""
 
