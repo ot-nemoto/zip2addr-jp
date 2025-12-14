@@ -37,22 +37,16 @@ python -c "from zip2addr.api import lookup; print(lookup('100-0001'))"
 
 ## 提供している機能
 
-- `lookup(postal_code: str) -> Zip2Addr | None` — 郵便番号を正規化して検索し、最初の一致を `Zip2Addr` オブジェクトとして返します。見つからなければ `None` を返します。
-- `lookup_all(postal_code: str) -> list[Zip2Addr]` — 指定した郵便番号に一致する全ての行をリストで返します（CSV の全行を DB に保持する構成のため、同一郵便番号に複数候補がある場合に有用です）。
+- `lookup(postal_code: str) -> list[Zip2Addr]` — 郵便番号を正規化して検索し、該当するすべての `Zip2Addr` をリストで返します。見つからなければ空リストを返します。
 - 同梱の `zip2addr.db`（`src/zip2addr/zip2addr.db`）は `scripts/generate_db.py` で生成できます。データは "全入れ替え" ポリシーです（既存データは DROP → 再生成します）。
 
 ## API 使い方（例）
 
 ```python
-from zip2addr.api import lookup, lookup_all
+from zip2addr.api import lookup
 
-# 単一取得（最初の一致）
-res = lookup('100-0001')
-if res:
-	print(res.to_dict())
-
-# 複数候補を全て取得
-all_res = lookup_all('100-0001')
+# 全候補を取得（リストを返す）
+all_res = lookup('100-0001')
 for r in all_res:
 	print(r.to_dict())
 ```
@@ -93,5 +87,6 @@ PYTHONPATH=src python -m zip2addr.cli 1000001 --db src/zip2addr/zip2addr.db
 
 ## 注意点
 
-- CSV には同一郵便番号の重複行が存在します。現在の方針は「全行保持」であり、検索 API は `lookup_all()` で複数候補を取得できます。`lookup()` は最初の 1 件を返します。
+-- CSV には同一郵便番号の重複行が存在します。現在の方針は「全行保持」であり、検索 API は `lookup()` が全候補を返すため、複数候補を取得できます。
+
 - パッケージにデータを同梱する場合、リポジトリのサイズが大きくなる点に注意してください（Git LFS や Releases の利用を検討）。

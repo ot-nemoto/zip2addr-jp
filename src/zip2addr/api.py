@@ -1,7 +1,7 @@
 import os
 import sqlite3
 import unicodedata
-from typing import Optional
+from typing import List, Optional
 
 from .models import Zip2Addr
 
@@ -18,40 +18,20 @@ def _normalize_postal(postal_code: str) -> str:
     return "".join(ch for ch in s if ch.isdigit())
 
 
-def lookup(postal_code: str, db_path: Optional[str] = None) -> Optional[Zip2Addr]:
-    """Lookup postal code and return Zip2Addr or None.
+def lookup(postal_code: str, db_path: Optional[str] = None) -> List[Zip2Addr]:
+    """Lookup postal code and return list of Zip2Addr (all matches).
 
     Args:
         postal_code: postal code string (with or without hyphen, full/half width allowed)
         db_path: optional path to sqlite DB; if omitted use bundled db
     """
     if not postal_code:
-        return None
-    key = _normalize_postal(postal_code)
-    db = db_path or _get_db_path()
-    if not os.path.exists(db):
-        return None
-    with sqlite3.connect(db) as conn:
-        cur = conn.cursor()
-        cur.execute(
-            "SELECT zipcode, jis_code, old_postal_code, pref_kana, city_kana, town_kana, prefecture, city, town, multiple_postal, koaza, chome, multiple_town, update_status, change_reason FROM postal WHERE zipcode = ?",
-            (key,),
-        )
-        row = cur.fetchone()
-        if not row:
-            return None
-        return Zip2Addr.from_row(row)
-
-
-def lookup_all(postal_code: str, db_path: Optional[str] = None) -> list[Zip2Addr]:
-    """Return all matching rows for the postal code as a list of Zip2Addr."""
-    if not postal_code:
         return []
     key = _normalize_postal(postal_code)
     db = db_path or _get_db_path()
     if not os.path.exists(db):
         return []
-    results: list[Zip2Addr] = []
+    results: List[Zip2Addr] = []
     with sqlite3.connect(db) as conn:
         cur = conn.cursor()
         cur.execute(
@@ -70,5 +50,5 @@ class Zip2AddrService:
     def __init__(self, db_path: Optional[str] = None):
         self.db_path = db_path or _get_db_path()
 
-    def lookup(self, postal_code: str) -> Optional[Zip2Addr]:
+    def lookup(self, postal_code: str) -> List[Zip2Addr]:
         return lookup(postal_code, db_path=self.db_path)
