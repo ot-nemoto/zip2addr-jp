@@ -34,3 +34,64 @@ python -c "from zip2addr.api import lookup; print(lookup('100-0001'))"
 ```
 
 注意: CI では `PYTHONPATH=src pytest` を実行します。
+
+## 提供している機能
+
+- `lookup(postal_code: str) -> Zip2Addr | None` — 郵便番号を正規化して検索し、最初の一致を `Zip2Addr` オブジェクトとして返します。見つからなければ `None` を返します。
+- `lookup_all(postal_code: str) -> list[Zip2Addr]` — 指定した郵便番号に一致する全ての行をリストで返します（CSV の全行を DB に保持する構成のため、同一郵便番号に複数候補がある場合に有用です）。
+- 同梱の `zip2addr.db`（`src/zip2addr/zip2addr.db`）は `scripts/generate_db.py` で生成できます。データは "全入れ替え" ポリシーです（既存データは DROP → 再生成します）。
+
+## API 使い方（例）
+
+```python
+from zip2addr.api import lookup, lookup_all
+
+# 単一取得（最初の一致）
+res = lookup('100-0001')
+if res:
+	print(res.to_dict())
+
+# 複数候補を全て取得
+all_res = lookup_all('100-0001')
+for r in all_res:
+	print(r.to_dict())
+```
+
+## CLI 使い方
+
+- インストール済みの entry point を使う（`pyproject.toml` の `project.scripts` で `zip2addr` を定義）:
+
+```bash
+zip2addr 1000001 --db src/zip2addr/zip2addr.db
+```
+
+- インストールせずに直接実行する場合:
+
+```bash
+PYTHONPATH=src python -m zip2addr.cli 1000001 --db src/zip2addr/zip2addr.db
+```
+
+## DB 生成と運用ポリシー
+
+- `scripts/generate_db.py utf_ken_all.csv out.db` を実行すると、`out.db` を DROP → 全行挿入（サロゲート PK を持つスキーマ）で再生成します。データ更新は全入れ替えが基本です。
+- 生成された DB は `zipcode` に対してインデックスを持つため、`SELECT ... WHERE zipcode = ?` は高速です。
+
+## 開発フロー（推奨）
+
+- 開発中は editable インストールを行うと便利:
+
+```bash
+python -m pip install -e .[test]
+```
+
+- あるいはインストールせずに環境変数で直接実行する方法:
+
+```bash
+PYTHONPATH=src pytest -q
+PYTHONPATH=src python -m zip2addr.cli 1000001 --db src/zip2addr/zip2addr.db
+```
+
+## 注意点
+
+- CSV には同一郵便番号の重複行が存在します。現在の方針は「全行保持」であり、検索 API は `lookup_all()` で複数候補を取得できます。`lookup()` は最初の 1 件を返します。
+- パッケージにデータを同梱する場合、リポジトリのサイズが大きくなる点に注意してください（Git LFS や Releases の利用を検討）。
