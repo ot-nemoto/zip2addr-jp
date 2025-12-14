@@ -26,6 +26,9 @@ def test_lookup_basic(tmp_path):
 
     res = lookup("100-0001")
     assert res is not None
-    assert res.prefecture == "東京都"
-    assert res.city == "千代田区"
-    assert res.zipcode == "1000001"
+    assert isinstance(res, list)
+    assert len(res) == 1
+    rec = res[0]
+    assert rec.prefecture == "東京都"
+    assert rec.city == "千代田区"
+    assert rec.zipcode == "1000001"
