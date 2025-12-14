@@ -1,6 +1,7 @@
 {
   "name": "Python 3",
   "image": "mcr.microsoft.com/devcontainers/python:2-3.14-trixie",
+  "postCreateCommand": ".devcontainer/postCreate.sh",
   "customizations": {
     "vscode": {
       "extensions": [
