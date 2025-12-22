@@ -2,8 +2,8 @@ name: Build release with DB
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "0 3 * * 1" # weekly on Monday UTC
+    branches:
+      - feature/library-publish-workflow
 
 jobs:
   build:
