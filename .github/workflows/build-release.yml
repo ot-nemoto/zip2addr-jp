@@ -25,38 +25,38 @@ jobs:
           python -m pip install --upgrade pip
           pip install build
 
-      - name: Download data and maybe exit if unchanged
+      - name: Install jq
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq
+
+      - name: Download utf_ken_all.zip
+        run: |
+          set -euo pipefail
+          echo "Downloading utf_ken_all.zip"
+          curl -sSL -o utf_ken_all.zip "https://www.post.japanpost.jp/zipcode/dl/utf/utf_ken_all.zip"
+          unzip -o utf_ken_all.zip
+
+      - name: Compute checksum
+        run: |
+          set -euo pipefail
+          echo "Computing checksum"
+          sha256sum utf_ken_all.zip | awk '{print $1}' > utf_ken_all.sha256
+
+      - name: Check previous checksum on latest release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
-          echo "Downloading utf_ken_all.zip"
-          curl -sSL -o utf_ken_all.zip https://www.post.japanpost.jp/zipcode/dl/utf/utf_ken_all.zip
-          unzip -o utf_ken_all.zip
-
-          echo "Computing checksum"
-          sha256sum utf_ken_all.zip | awk '{print $1}' > utf_ken_all.sha256
-
           echo "Checking latest release for previous checksum"
           latest=$(curl -s -H "Authorization: token ${GITHUB_TOKEN}" "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/latest" || true)
-          prev_asset_url=$(python - <<'PY'
-import sys, json
-try:
-    j = json.load(sys.stdin)
-except Exception:
-    j = {}
-for a in j.get('assets', []):
-    if a.get('name') == 'utf_ken_all.sha256':
-        print(a.get('url'))
-        break
-PY
-<<< "$latest")
+          prev_asset_url=$(echo "$latest" | jq -r '.assets[]? | select(.name=="utf_ken_all.sha256") | .url' || true)
 
           if [ -n "$prev_asset_url" ]; then
             curl -sL -H "Authorization: token ${GITHUB_TOKEN}" -H "Accept: application/octet-stream" "$prev_asset_url" -o prev_utf_ken_all.sha256 || true
             if [ -f prev_utf_ken_all.sha256 ] && cmp -s prev_utf_ken_all.sha256 utf_ken_all.sha256; then
-              echo "No change in data; exiting.";
+              echo "No change in data; exiting."
               exit 0
             fi
           fi
@@ -77,13 +77,9 @@ PY
           set -euo pipefail
           TAG="db-$(date +%Y%m%d)"
           echo "Creating release ${TAG}"
-          RELEASE_JSON=$(curl -s -X POST -H "Authorization: token ${GITHUB_TOKEN}" -H "Accept: application/vnd.github+json" https://api.github.com/repos/${GITHUB_REPOSITORY}/releases -d "{\"tag_name\": \"${TAG}\", \"name\": \"${TAG}\"}")
-          UPLOAD_URL=$(python - <<'PY'
-import sys,json
-j=json.load(sys.stdin)
-print(j.get('upload_url','').split('{')[0])
-PY
-<<< "$RELEASE_JSON")
+          printf '{"tag_name":"%s","name":"%s"}' "${TAG}" "${TAG}" > release.json
+          RELEASE_JSON=$(curl -s -X POST -H "Authorization: token ${GITHUB_TOKEN}" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases" -d @release.json)
+          UPLOAD_URL=$(echo "$RELEASE_JSON" | jq -r '.upload_url' | sed 's/{.*//')
 
           echo "Uploading artifacts to ${UPLOAD_URL}"
           for f in dist/*; do
