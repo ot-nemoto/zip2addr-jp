@@ -1,16 +1,16 @@
 name: Build release with DB
 
 on:
-  workflow_dispatch:
-    branches:
-      - feature/library-publish-workflow
   push:
     branches:
       - feature/library-publish-workflow
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      DATA_URL: "https://www.post.japanpost.jp/zipcode/dl/utf/zip/utf_ken_all.zip"
     permissions:
       contents: write
 
@@ -37,7 +37,7 @@ jobs:
         run: |
           set -euo pipefail
           echo "Downloading utf_ken_all.zip"
-          curl -sSL -o utf_ken_all.zip "https://www.post.japanpost.jp/zipcode/dl/utf/utf_ken_all.zip"
+          curl -sSL -o utf_ken_all.zip "$DATA_URL"
           unzip -o utf_ken_all.zip
 
       - name: Compute checksum
