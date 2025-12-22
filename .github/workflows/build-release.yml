@@ -4,6 +4,9 @@ on:
   workflow_dispatch:
     branches:
       - feature/library-publish-workflow
+  push:
+    branches:
+      - feature/library-publish-workflow
 
 jobs:
   build:
