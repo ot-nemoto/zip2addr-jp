@@ -65,6 +65,33 @@ zip2addr 1000001 --db src/zip2addr/zip2addr.db
 PYTHONPATH=src python -m zip2addr.cli 1000001 --db src/zip2addr/zip2addr.db
 ```
 
+## Release からの入手とインストール
+
+- **リリース成果物（wheel/sdist）を直接ダウンロードしてインストールする手順**:
+
+```bash
+# GitHub Releases ページに移動し、該当バージョン（例: db-YYYYMMDD や vX.Y.Z）から
+# wheel ファイル（*.whl）またはソースアーカイブ（*.tar.gz）をダウンロードします。
+# 例: ダウンロードしたファイル名が zip2addr-0.1.0-py3-none-any.whl の場合
+python -m pip install --upgrade pip
+python -m pip install --no-deps ./zip2addr-0.1.0-py3-none-any.whl
+
+# またはソース配布を使う場合
+python -m pip install ./zip2addr-0.1.0.tar.gz
+```
+
+- **リリースと一緒に配布されたデータベース（zip2addr.db）を個別に使う場合**:
+
+1.  リリースのアセットに `zip2addr.db` が含まれている場合はそれをダウンロードします。
+2.  任意の場所に保存して、`--db` オプションでパスを指定して利用します。
+
+```bash
+# 例: ダウンロードして /opt/zip2addr/zip2addr.db に保存した場合
+zip2addr 1000001 --db /opt/zip2addr/zip2addr.db
+```
+
+- **注意**: パッケージに同梱された wheel の場合は多くの環境でデフォルトでパッケージ内にデータベースが埋め込まれているため、`--db` を指定しなくても `lookup()` は内部の組み込み DB を使います。ただし、配布された wheel にデータが含まれているかはリリースアセットの説明を確認してください。
+
 ## DB 生成と運用ポリシー
 
 - `scripts/generate_db.py utf_ken_all.csv out.db` を実行すると、`out.db` を DROP → 全行挿入（サロゲート PK を持つスキーマ）で再生成します。データ更新は全入れ替えが基本です。

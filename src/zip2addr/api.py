@@ -1,3 +1,4 @@
+import importlib.resources
 import os
 import sqlite3
 import unicodedata
@@ -7,8 +8,12 @@ from .models import Zip2Addr
 
 
 def _get_db_path() -> str:
-    base = os.path.dirname(__file__)
-    return os.path.join(base, "zip2addr.db")
+    # Use importlib.resources to locate the bundled DB safely even when
+    # installed from a wheel (which may store package data in zip files).
+    db_resource = importlib.resources.files("zip2addr").joinpath("zip2addr.db")
+    # as_file will extract to a temporary file if necessary and yield a path
+    with importlib.resources.as_file(db_resource) as p:
+        return str(p)
 
 
 def _normalize_postal(postal_code: str) -> str:
