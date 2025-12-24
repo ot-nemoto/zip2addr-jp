@@ -1,12 +1,9 @@
 name: Data check and open PR
 
 on:
-  push:
-    branches:
-      - feature/library-publish-workflow
   workflow_dispatch:
   schedule:
-    - cron: "0 6 * * *" # daily at 06:00 UTC
+    - cron: "0 6 1 * *" # monthly on day 1 at 06:00 UTC
 
 jobs:
   check:
@@ -82,13 +79,25 @@ jobs:
           echo "branch=data-update/${DATA_DATE}" >> $GITHUB_OUTPUT
           echo "data_date=${DATA_DATE}" >> $GITHUB_OUTPUT
           echo "data_sha=${SHA}" >> $GITHUB_OUTPUT
+      - name: Clean working tree (remove downloads)
+        run: |
+          # remove untracked files like downloaded zips so they aren't accidentally included
+          git clean -fd
+
+      - name: Validate data_date
+        run: |
+          echo "prepare outputs: data_date='${{ steps.prepare.outputs.data_date }}' data_sha='${{ steps.prepare.outputs.data_sha }}'"
+          if [ -z "${{ steps.prepare.outputs.data_date }}" ]; then
+            echo "ERROR: data_date is empty — aborting to avoid creating invalid branch name"
+            exit 1
+          fi
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: "chore(data): update data to ${{ steps.prepare.outputs.data_date }}"
-          branch: "data-update/${{ steps.prepare.outputs.data_date }}"
+          branch: ${{ steps.prepare.outputs.branch }}
           title: "chore(data): update postal data to ${{ steps.prepare.outputs.data_date }}"
           body: |
             This PR updates the bundled postal data to ${{ steps.prepare.outputs.data_date }}.
