@@ -10,6 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      actions: write
 
     steps:
       - name: Checkout
@@ -59,8 +60,15 @@ jobs:
         run: |
           set -euo pipefail
           echo "Data changed — invoking build-release workflow"
-          curl -s -X POST \
+          REF_NAME="${{ github.ref_name || 'master' }}"
+          # POST and capture HTTP status
+          status=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer ${GITHUB_TOKEN}" \
             https://api.github.com/repos/${REPO}/actions/workflows/build-release.yml/dispatches \
-            -d '{"ref":"refs/heads/'"${{ github.ref_name }}"'"}' || true
+            -d '{"ref":"refs/heads/'"${REF_NAME}"'"}') || true
+          echo "Dispatch HTTP status: ${status}"
+          if [ "${status}" = "403" ]; then
+            echo "ERROR: dispatch forbidden (403) — failing job"
+            exit 1
+          fi
