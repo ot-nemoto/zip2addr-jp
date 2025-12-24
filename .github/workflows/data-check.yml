@@ -46,6 +46,7 @@ jobs:
         run: |
           set -euo pipefail
           if [ -f prev_utf_ken_all.sha256 ] && cmp -s prev_utf_ken_all.sha256 utf_ken_all.sha256; then
+            echo "no_change=true" >> $GITHUB_OUTPUT
             echo "No change in data; exiting"
             exit 0
           fi
@@ -80,11 +81,13 @@ jobs:
           echo "data_date=${DATA_DATE}" >> $GITHUB_OUTPUT
           echo "data_sha=${SHA}" >> $GITHUB_OUTPUT
       - name: Clean working tree (remove downloads)
+        if: ${{ steps.prepare.outputs.no_change != 'true' }}
         run: |
           # remove untracked files like downloaded zips so they aren't accidentally included
           git clean -fd
 
       - name: Validate data_date
+        if: ${{ steps.prepare.outputs.no_change != 'true' }}
         run: |
           echo "prepare outputs: data_date='${{ steps.prepare.outputs.data_date }}' data_sha='${{ steps.prepare.outputs.data_sha }}'"
           if [ -z "${{ steps.prepare.outputs.data_date }}" ]; then
@@ -93,6 +96,7 @@ jobs:
           fi
 
       - name: Create Pull Request
+        if: ${{ steps.prepare.outputs.no_change != 'true' }}
         uses: peter-evans/create-pull-request@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
