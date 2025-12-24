@@ -1,14 +1,20 @@
 name: Build release with DB
 
 on:
+  pull_request:
+    types: [closed]
+    branches:
+      - master
   push:
     branches:
-      - feature/library-publish-workflow
+      - master
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    if: >
+      (github.event_name == 'push') || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
     env:
       DATA_URL: "https://www.post.japanpost.jp/zipcode/dl/utf/zip/utf_ken_all.zip"
     permissions:
@@ -68,6 +74,35 @@ jobs:
         run: |
           python3 scripts/generate_db.py utf_ken_all.csv src/zip2addr/zip2addr.db
 
+      - name: Prepare version from data_version
+        id: prepare_version
+        run: |
+          set -euo pipefail
+          # try to read DATA_DATE from committed data_version.py (created by data-check PR)
+          if [ -f src/zip2addr/data_version.py ]; then
+            DATA_DATE=$(python -c "import importlib.util,sys;spec=importlib.util.spec_from_file_location('dv','src/zip2addr/data_version.py');dv=importlib.util.module_from_spec(spec);spec.loader.exec_module(dv);print(getattr(dv,'DATA_DATE',''))")
+          else
+            DATA_DATE=$(date +%Y%m%d)
+          fi
+
+          # extract MAJOR.MINOR from existing pyproject.toml
+          if grep -q '^version' pyproject.toml; then
+            MAJOR=$(grep '^version' pyproject.toml | sed -E 's/version\s*=\s*"([0-9]+)\.([0-9]+)\..*"/\1/' || echo 0)
+            MINOR=$(grep '^version' pyproject.toml | sed -E 's/version\s*=\s*"([0-9]+)\.([0-9]+)\..*"/\2/' || echo 1)
+          else
+            MAJOR=0
+            MINOR=1
+          fi
+
+          NEW_VERSION="${MAJOR}.${MINOR}.${DATA_DATE}"
+          echo "Setting NEW_VERSION=${NEW_VERSION}"
+          sed -E "s/^version\s*=.*/version = \"${NEW_VERSION}\"/" pyproject.toml > pyproject.toml.tmp
+          mv pyproject.toml.tmp pyproject.toml
+
+          echo "data_date=${DATA_DATE}" >> $GITHUB_OUTPUT
+          echo "major=${MAJOR}" >> $GITHUB_OUTPUT
+          echo "minor=${MINOR}" >> $GITHUB_OUTPUT
+
       - name: Build wheel and sdist
         run: |
           python -m build
@@ -78,7 +113,16 @@ jobs:
           GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
-          TAG="db-$(date +%Y%m%d)"
+          # Use DATA_DATE from previous step outputs, fallback to today
+          DATA_DATE="${{ steps.prepare_version.outputs.data_date }}"
+          if [ -z "${DATA_DATE}" ]; then
+            DATA_DATE=$(date +%Y%m%d)
+          fi
+
+          MAJOR="${{ steps.prepare_version.outputs.major }}"
+          MINOR="${{ steps.prepare_version.outputs.minor }}"
+
+          TAG="${MAJOR}.${MINOR}.${DATA_DATE}"
           echo "Creating release ${TAG}"
           printf '{"tag_name":"%s","name":"%s"}' "${TAG}" "${TAG}" > release.json
           RELEASE_JSON=$(curl -s -X POST -H "Authorization: token ${GITHUB_TOKEN}" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases" -d @release.json)
