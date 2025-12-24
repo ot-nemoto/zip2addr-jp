@@ -10,7 +10,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      issues: write
 
     steps:
       - name: Checkout
@@ -29,6 +28,12 @@ jobs:
           curl -sSL -o utf_ken_all.zip "$DATA_URL"
           sha256sum utf_ken_all.zip | awk '{print $1}' > utf_ken_all.sha256
 
+      - name: Unzip data
+        run: |
+          set -euo pipefail
+          echo "Unzipping utf_ken_all.zip"
+          unzip -o utf_ken_all.zip
+
       - name: Get previous checksum from latest release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -42,8 +47,8 @@ jobs:
             curl -sL -H "Authorization: token ${GITHUB_TOKEN}" -H "Accept: application/octet-stream" "$prev_asset_url" -o prev_utf_ken_all.sha256 || true
           fi
 
-      - name: Compare checksums and prepare files
-        id: prepare
+      - name: Check data change
+        id: check_change
         run: |
           set -euo pipefail
           if [ -f prev_utf_ken_all.sha256 ] && cmp -s prev_utf_ken_all.sha256 utf_ken_all.sha256; then
@@ -52,6 +57,10 @@ jobs:
             exit 0
           fi
 
+      - name: Update version and data files
+        id: update_version
+        run: |
+          set -euo pipefail
           DATA_DATE=$(date +%Y%m%d)
           SHA=$(cat utf_ken_all.sha256 | tr -d '[:space:]')
 
@@ -76,39 +85,55 @@ jobs:
 
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          # Note: SQLite DB generation moved to its own step after this one.
           git add src/zip2addr/data_version.py pyproject.toml
           git commit -m "chore(data): update data to ${DATA_DATE} (sha ${SHA})" || true
           echo "branch=data-update/${DATA_DATE}" >> $GITHUB_OUTPUT
           echo "data_date=${DATA_DATE}" >> $GITHUB_OUTPUT
           echo "data_sha=${SHA}" >> $GITHUB_OUTPUT
-      - name: Clean working tree (remove downloads)
-        if: ${{ steps.prepare.outputs.no_change != 'true' }}
+
+      - name: Generate SQLite DB
+        if: ${{ steps.check_change.outputs.no_change != 'true' }}
+        env:
+          DATA_DATE: ${{ steps.update_version.outputs.data_date }}
         run: |
-          # remove untracked files like downloaded zips so they aren't accidentally included
-          git clean -fd
+          set -euo pipefail
+          echo "Generating SQLite DB src/zip2addr/zip2addr.db"
+          python3 scripts/generate_db.py utf_ken_all.csv src/zip2addr/zip2addr.db
+          git add src/zip2addr/zip2addr.db
+          # Amend previous commit to include the DB if commit exists, otherwise create a new one
+          if git rev-parse --verify --quiet HEAD >/dev/null; then
+            git commit --amend --no-edit || git commit -m "chore(data): add sqlite db for ${DATA_DATE}"
+          else
+            git commit -m "chore(data): add sqlite db for ${DATA_DATE}" || true
+          fi
 
       - name: Validate data_date
-        if: ${{ steps.prepare.outputs.no_change != 'true' }}
+        if: ${{ steps.check_change.outputs.no_change != 'true' }}
         run: |
-          echo "prepare outputs: data_date='${{ steps.prepare.outputs.data_date }}' data_sha='${{ steps.prepare.outputs.data_sha }}'"
-          if [ -z "${{ steps.prepare.outputs.data_date }}" ]; then
+          echo "update_version outputs: data_date='${{ steps.update_version.outputs.data_date }}' data_sha='${{ steps.update_version.outputs.data_sha }}'"
+          if [ -z "${{ steps.update_version.outputs.data_date }}" ]; then
             echo "ERROR: data_date is empty — aborting to avoid creating invalid branch name"
             exit 1
           fi
 
-      - name: Create Issue reporting data update
-        if: ${{ steps.prepare.outputs.no_change != 'true' }}
-        uses: actions/github-script@v6
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const data_date = context.payload.workflow_run ? context.payload.workflow_run.head_commit.timestamp : ''
-            const title = `chore(data): update postal data to ${process.env.STEPS_PREPARE_OUTPUTS_DATA_DATE || '${{ steps.prepare.outputs.data_date }}'}`
-            const body = `This issue was created by the data-check workflow.\n\nData date: ${{ steps.prepare.outputs.data_date }}\nSHA256: ${{ steps.prepare.outputs.data_sha }}\n`;
-            await github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: title,
-              body: body,
-              labels: ['data-update']
-            })
+      - name: Push release branch
+        if: ${{ steps.check_change.outputs.no_change != 'true' }}
+        env:
+          BRANCH: ${{ steps.update_version.outputs.branch }}
+        run: |
+          set -euo pipefail
+          echo "Pushing branch ${BRANCH} using GITHUB_TOKEN"
+          # Create branch locally
+          git checkout -b "${BRANCH}" || git checkout "${BRANCH}"
+
+          # Use GITHUB_TOKEN for push via remote URL (no PERSONAL_TOKEN used)
+          remote_url="https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}"
+          git remote set-url origin "${remote_url}"
+          git push --set-upstream origin "${BRANCH}"
+
+      - name: Clean working tree (remove downloads)
+        if: ${{ steps.check_change.outputs.no_change != 'true' }}
+        run: |
+          # remove untracked files like downloaded zips so they aren't accidentally included
+          git clean -fd
