@@ -1,13 +1,6 @@
 name: Build release with DB
 
 on:
-  pull_request:
-    types: [closed]
-    branches:
-      - master
-  push:
-    branches:
-      - master
   workflow_dispatch:
 
 jobs:
