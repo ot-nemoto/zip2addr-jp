@@ -10,6 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      issues: write
 
     steps:
       - name: Checkout
@@ -95,15 +96,19 @@ jobs:
             exit 1
           fi
 
-      - name: Create Pull Request
+      - name: Create Issue reporting data update
         if: ${{ steps.prepare.outputs.no_change != 'true' }}
-        uses: peter-evans/create-pull-request@v5
+        uses: actions/github-script@v6
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "chore(data): update data to ${{ steps.prepare.outputs.data_date }}"
-          branch: ${{ steps.prepare.outputs.branch }}
-          title: "chore(data): update postal data to ${{ steps.prepare.outputs.data_date }}"
-          body: |
-            This PR updates the bundled postal data to ${{ steps.prepare.outputs.data_date }}.
-            SHA256: ${{ steps.prepare.outputs.data_sha }}
-          labels: data-update
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const data_date = context.payload.workflow_run ? context.payload.workflow_run.head_commit.timestamp : ''
+            const title = `chore(data): update postal data to ${process.env.STEPS_PREPARE_OUTPUTS_DATA_DATE || '${{ steps.prepare.outputs.data_date }}'}`
+            const body = `This issue was created by the data-check workflow.\n\nData date: ${{ steps.prepare.outputs.data_date }}\nSHA256: ${{ steps.prepare.outputs.data_sha }}\n`;
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: title,
+              body: body,
+              labels: ['data-update']
+            })
