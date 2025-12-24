@@ -1,4 +1,4 @@
-name: Data check and open PR
+name: Data Source Check
 
 on:
   workflow_dispatch:
