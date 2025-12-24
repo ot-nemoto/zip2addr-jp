@@ -1,7 +1,7 @@
 import os
 import sqlite3
 
-from zip2addr.api import lookup
+from zip2addr import lookup
 
 
 def test_lookup_basic(tmp_path):

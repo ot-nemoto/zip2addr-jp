@@ -20,8 +20,8 @@ pytest -q
 2. 実データから DB を生成して動作確認する:
 
 ```bash
-python3 scripts/generate_db.py utf_ken_all.csv zip2addr.db
-python -c "from zip2addr.api import lookup; print(lookup('100-0001').to_dict())"
+python3 scripts/generate_db.py utf2ken_all.csv zip2addr.db
+python -c "from zip2addr import lookup; print(lookup('100-0001').to_dict())"
 ```
 
 ```bash
@@ -29,8 +29,8 @@ python -c "from zip2addr.api import lookup; print(lookup('100-0001').to_dict())"
 PYTHONPATH=src pytest -q
 
 # DB を生成して動作確認する例
-python3 scripts/generate_db.py utf_ken_all.csv zip2addr.db
-python -c "from zip2addr.api import lookup; print(lookup('100-0001'))"
+python3 scripts/generate_db.py utf2ken_all.csv zip2addr.db
+python -c "from zip2addr import lookup; print(lookup('100-0001'))"
 ```
 
 注意: CI では `PYTHONPATH=src pytest` を実行します。
@@ -43,7 +43,7 @@ python -c "from zip2addr.api import lookup; print(lookup('100-0001'))"
 ## API 使い方（例）
 
 ```python
-from zip2addr.api import lookup
+from zip2addr import lookup
 
 # 全候補を取得（リストを返す）
 all_res = lookup('100-0001')
