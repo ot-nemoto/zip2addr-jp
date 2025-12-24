@@ -1,4 +1,4 @@
-name: Build release with DB
+name: Build and Release (with DB)
 
 on:
   workflow_dispatch:
@@ -6,8 +6,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    if: >
-      (github.event_name == 'push') || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
     env:
       DATA_URL: "https://www.post.japanpost.jp/zipcode/dl/utf/zip/utf_ken_all.zip"
     permissions:
