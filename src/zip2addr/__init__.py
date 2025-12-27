@@ -1,4 +1,6 @@
-__version__ = "0.0.0"
+from importlib.metadata import version
+
+__version__ = version("zip2addr-jp")
 
 from .api import Zip2Addr, lookup  # re-export for convenience
 

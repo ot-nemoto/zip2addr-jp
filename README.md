@@ -56,13 +56,20 @@ for r in all_res:
 - インストール済みの entry point を使う（`pyproject.toml` の `project.scripts` で `zip2addr` を定義）:
 
 ```bash
-zip2addr 1000001 --db src/zip2addr/zip2addr.db
+zip2addr 1000001
+```
+
+- デバッグログを出力する場合は `--debug` フラグを追加:
+
+```bash
+zip2addr 1000001 --debug
 ```
 
 - インストールせずに直接実行する場合:
 
 ```bash
-PYTHONPATH=src python -m zip2addr.cli 1000001 --db src/zip2addr/zip2addr.db
+PYTHONPATH=src python -m zip2addr.cli 1000001
+PYTHONPATH=src python -m zip2addr.cli 1000001 --debug
 ```
 
 ## Release からの入手とインストール
@@ -70,27 +77,22 @@ PYTHONPATH=src python -m zip2addr.cli 1000001 --db src/zip2addr/zip2addr.db
 - **リリース成果物（wheel/sdist）を直接ダウンロードしてインストールする手順**:
 
 ```bash
-# GitHub Releases ページに移動し、該当バージョン（例: db-YYYYMMDD や vX.Y.Z）から
+# GitHub Releases ページに移動し、該当バージョン（例: vX.Y.Z）から
 # wheel ファイル（*.whl）またはソースアーカイブ（*.tar.gz）をダウンロードします。
 # 例: ダウンロードしたファイル名が zip2addr-0.1.0-py3-none-any.whl の場合
 python -m pip install --upgrade pip
-python -m pip install --no-deps ./zip2addr-0.1.0-py3-none-any.whl
+python -m pip install ./zip2addr-0.1.0-py3-none-any.whl
 
 # またはソース配布を使う場合
 python -m pip install ./zip2addr-0.1.0.tar.gz
 ```
 
-- **リリースと一緒に配布されたデータベース（zip2addr.db）を個別に使う場合**:
-
-1.  リリースのアセットに `zip2addr.db` が含まれている場合はそれをダウンロードします。
-2.  任意の場所に保存して、`--db` オプションでパスを指定して利用します。
+- **インストール後の使用**:
 
 ```bash
-# 例: ダウンロードして /opt/zip2addr/zip2addr.db に保存した場合
-zip2addr 1000001 --db /opt/zip2addr/zip2addr.db
+# パッケージに同梱されたデータベースを自動で使用
+zip2addr 1000001
 ```
-
-- **注意**: パッケージに同梱された wheel の場合は多くの環境でデフォルトでパッケージ内にデータベースが埋め込まれているため、`--db` を指定しなくても `lookup()` は内部の組み込み DB を使います。ただし、配布された wheel にデータが含まれているかはリリースアセットの説明を確認してください。
 
 ## DB 生成と運用ポリシー
 
@@ -109,8 +111,14 @@ python -m pip install -e .[test]
 
 ```bash
 PYTHONPATH=src pytest -q
-PYTHONPATH=src python -m zip2addr.cli 1000001 --db src/zip2addr/zip2addr.db
+PYTHONPATH=src python -m zip2addr.cli 1000001
 ```
+
+## バージョン管理
+
+- バージョンは `pyproject.toml` で一元管理しています
+- `src/zip2addr/__init__.py` は `importlib.metadata.version()` で `pyproject.toml` から動的に読み込みます
+- **バージョン更新時は `pyproject.toml` のみを修正してください**。他ファイルへの同期は自動です。
 
 ## 注意点
 
