@@ -8,7 +8,7 @@ version = "0.0.0"
 description = "Lookup Japanese addresses from postal codes using Japan Post data."
 authors = [ { name = "ot-nemoto", email = "nemoto@opentone.co.jp" } ]
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.9"
 keywords = ["postal","zipcode","japan","address"]
 
 dependencies = []
@@ -58,7 +58,7 @@ line-length = 88
 indent-width = 4
 
 # Assume Python 3.12
-target-version = "py312"
+target-version = "py39"
 
 [tool.ruff.lint]
 # Enable Pyflakes (`F`) and a subset of the pycodestyle (`E`) codes by default.

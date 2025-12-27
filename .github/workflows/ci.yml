@@ -10,8 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        # Temporarily limit CI to a single Python version for speed/stability
-        python-version: ["3.12"]
+        python-version: ["3.9"]
 
     steps:
       - uses: actions/checkout@v4
