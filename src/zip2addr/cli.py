@@ -3,6 +3,7 @@ import json
 import logging
 from typing import Optional
 
+from . import __version__
 from .api import Zip2AddrService
 
 
@@ -10,9 +11,20 @@ def main(argv: Optional[list[str]] = None) -> int:
     parser = argparse.ArgumentParser(
         description="Lookup Japanese address from postal code"
     )
-    parser.add_argument("postal", help="Postal code to lookup (with or without hyphen)")
+    parser.add_argument(
+        "postal", nargs="?", help="Postal code to lookup (with or without hyphen)"
+    )
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"%(prog)s {__version__}",
+    )
     parser.add_argument("--debug", action="store_true", help="Enable debug logging")
     args = parser.parse_args(argv)
+
+    # Check if postal code was provided
+    if not args.postal:
+        parser.error("postal code is required")
 
     # Configure logging based on debug flag
     if args.debug:

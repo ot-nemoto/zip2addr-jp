@@ -59,6 +59,12 @@ for r in all_res:
 zip2addr 1000001
 ```
 
+- バージョンを表示:
+
+```bash
+zip2addr --version
+```
+
 - デバッグログを出力する場合は `--debug` フラグを追加:
 
 ```bash
@@ -69,6 +75,7 @@ zip2addr 1000001 --debug
 
 ```bash
 PYTHONPATH=src python -m zip2addr.cli 1000001
+PYTHONPATH=src python -m zip2addr.cli --version
 PYTHONPATH=src python -m zip2addr.cli 1000001 --debug
 ```
 
