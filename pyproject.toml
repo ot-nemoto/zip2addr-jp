@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "zip2addr-jp"
-version = "0.2.0"
+version = "0.3.0"
 description = "Lookup Japanese addresses from postal codes using Japan Post data."
 authors = [ { name = "ot-nemoto", email = "nemoto@opentone.co.jp" } ]
 readme = "README.md"
