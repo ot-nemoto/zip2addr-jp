@@ -117,15 +117,31 @@ jobs:
 
           TAG="${MAJOR}.${MINOR}.${DATA_DATE}"
           echo "Creating release ${TAG}"
+
+          # Delete existing release and tag if they exist
+          EXISTING=$(curl -s -H "Authorization: token ${GITHUB_TOKEN}" "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/tags/${TAG}")
+          EXISTING_ID=$(echo "$EXISTING" | jq -r '.id // empty')
+          if [ -n "$EXISTING_ID" ]; then
+            echo "Deleting existing release ${TAG} (id: ${EXISTING_ID})"
+            curl -sS --fail -X DELETE -H "Authorization: token ${GITHUB_TOKEN}" "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/${EXISTING_ID}"
+            curl -sS -X DELETE -H "Authorization: token ${GITHUB_TOKEN}" "https://api.github.com/repos/${GITHUB_REPOSITORY}/git/refs/tags/${TAG}" || true
+          fi
+
           printf '{"tag_name":"%s","name":"%s"}' "${TAG}" "${TAG}" > release.json
-          RELEASE_JSON=$(curl -s -X POST -H "Authorization: token ${GITHUB_TOKEN}" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases" -d @release.json)
+          RELEASE_JSON=$(curl -sS --fail -X POST -H "Authorization: token ${GITHUB_TOKEN}" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases" -d @release.json)
           UPLOAD_URL=$(echo "$RELEASE_JSON" | jq -r '.upload_url' | sed 's/{.*//')
+
+          if [ -z "$UPLOAD_URL" ] || [ "$UPLOAD_URL" = "null" ]; then
+            echo "ERROR: Failed to get upload URL from release response"
+            echo "$RELEASE_JSON"
+            exit 1
+          fi
 
           echo "Uploading artifacts to ${UPLOAD_URL}"
           for f in dist/*; do
             echo "Uploading $f"
-            curl -s -X POST -H "Authorization: token ${GITHUB_TOKEN}" -H "Content-Type: application/octet-stream" --data-binary @"$f" "${UPLOAD_URL}?name=$(basename $f)"
+            curl -sS --fail -X POST -H "Authorization: token ${GITHUB_TOKEN}" -H "Content-Type: application/octet-stream" --data-binary @"$f" "${UPLOAD_URL}?name=$(basename $f)"
           done
 
           echo "Uploading checksum"
-          curl -s -X POST -H "Authorization: token ${GITHUB_TOKEN}" -H "Content-Type: text/plain" --data-binary @utf_ken_all.sha256 "${UPLOAD_URL}?name=utf_ken_all.sha256"
+          curl -sS --fail -X POST -H "Authorization: token ${GITHUB_TOKEN}" -H "Content-Type: text/plain" --data-binary @utf_ken_all.sha256 "${UPLOAD_URL}?name=utf_ken_all.sha256"
