@@ -61,8 +61,7 @@ jobs:
           set -euo pipefail
           echo "Data changed — updating DB and creating PR"
 
-          # Setup Python and generate DB
-          pip install --upgrade pip
+          # Generate DB
           unzip -o utf_ken_all.zip
           python3 scripts/generate_db.py utf_ken_all.csv src/zip2addr/zip2addr.db
 
