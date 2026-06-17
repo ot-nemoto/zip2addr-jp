@@ -19,6 +19,9 @@ zip2addr = "zip2addr.cli:main"
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+zip2addr = ["*.db"]
+
 [project.optional-dependencies]
 test = ["pytest"]
 
