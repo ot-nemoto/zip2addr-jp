@@ -10,7 +10,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      pull-requests: write
 
     steps:
       - name: Checkout
@@ -54,7 +53,6 @@ jobs:
           fi
 
       - name: Generate DB
-        id: generate_db
         if: ${{ steps.check_change.outputs.no_change != 'true' }}
         run: |
           set -euo pipefail
@@ -62,47 +60,13 @@ jobs:
           unzip -o utf_ken_all.zip
           python3 scripts/generate_db.py utf_ken_all.csv src/zip2addr/zip2addr.db
 
-          DATA_DATE=$(date +%Y%m%d)
-          cat > src/zip2addr/data_version.py <<PYEOF
-          DATA_DATE = "${DATA_DATE}"
-          PYEOF
-
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          git add src/zip2addr/zip2addr.db src/zip2addr/data_version.py
+          git add src/zip2addr/zip2addr.db
           if git diff --cached --quiet; then
             echo "No actual file changes after regeneration; skipping commit"
-            echo "committed=false" >> $GITHUB_OUTPUT
           else
-            git commit -m "data: 郵便番号データを ${DATA_DATE} 版に更新"
+            git commit -m "data: 郵便番号データを更新"
             git push origin develop
-            echo "committed=true" >> $GITHUB_OUTPUT
-            echo "data_date=${DATA_DATE}" >> $GITHUB_OUTPUT
           fi
-
-      - name: Create PR
-        if: ${{ steps.generate_db.outputs.committed == 'true' }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -euo pipefail
-          DATA_DATE="${{ steps.generate_db.outputs.data_date }}"
-
-          EXISTING_PR=$(gh pr list --base master --head develop --state open --json number --jq '.[0].number')
-          if [ -n "$EXISTING_PR" ]; then
-            echo "PR #${EXISTING_PR} is already open; skipping creation"
-            exit 0
-          fi
-
-          gh pr create \
-            --base master \
-            --head develop \
-            --title "data: 郵便番号データを ${DATA_DATE} 版に更新" \
-            --body "月次データチェックにより郵便番号データの更新を検出しました。
-
-          ## 変更内容
-          - \`src/zip2addr/zip2addr.db\` を最新の日本郵便データで再生成
-          - データ日付: ${DATA_DATE}
-
-          マージすると自動的に build-release が実行され、新しいリリースが作成されます。"
