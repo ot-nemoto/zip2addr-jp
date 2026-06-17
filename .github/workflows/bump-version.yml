@@ -1,0 +1,55 @@
+name: Bump Version
+
+on:
+  pull_request:
+    branches:
+      - master
+    types:
+      - labeled
+
+jobs:
+  bump:
+    if: github.event.label.name == 'bump:patch' || github.event.label.name == 'bump:minor'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+
+      - name: Bump version
+        id: bump
+        run: |
+          set -euo pipefail
+          TYPE=${{ github.event.label.name == 'bump:minor' && 'minor' || 'patch' }}
+          CURRENT=$(grep '^version' pyproject.toml | sed -E 's/version\s*=\s*"(.*)"/\1/')
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
+
+          if [ "$TYPE" = "minor" ]; then
+            MINOR=$((MINOR + 1))
+            PATCH=0
+          else
+            PATCH=$((PATCH + 1))
+          fi
+
+          NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+          sed -E "s/^version\s*=.*/version = \"${NEW_VERSION}\"/" pyproject.toml > pyproject.toml.tmp
+          mv pyproject.toml.tmp pyproject.toml
+
+          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "Bumped version: $CURRENT → $NEW_VERSION ($TYPE)"
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add pyproject.toml
+          git commit -m "chore: bump version to ${{ steps.bump.outputs.version }} [skip ci]"
+          git push
