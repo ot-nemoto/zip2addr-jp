@@ -53,43 +53,48 @@ jobs:
             echo "No change in data; exiting"
           fi
 
-      - name: Update DB and create PR
+      - name: Generate DB
+        id: generate_db
         if: ${{ steps.check_change.outputs.no_change != 'true' }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          echo "Data changed — updating DB and creating PR"
-
-          # Generate DB
+          echo "Data changed — regenerating DB"
           unzip -o utf_ken_all.zip
           python3 scripts/generate_db.py utf_ken_all.csv src/zip2addr/zip2addr.db
 
-          # Record data date
           DATA_DATE=$(date +%Y%m%d)
           cat > src/zip2addr/data_version.py <<PYEOF
           DATA_DATE = "${DATA_DATE}"
           PYEOF
 
-          # Configure git
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          # Commit and push to develop (skip if no actual changes)
           git add src/zip2addr/zip2addr.db src/zip2addr/data_version.py
           if git diff --cached --quiet; then
             echo "No actual file changes after regeneration; skipping commit"
-            exit 0
+            echo "committed=false" >> $GITHUB_OUTPUT
+          else
+            git commit -m "data: 郵便番号データを ${DATA_DATE} 版に更新"
+            git push origin develop
+            echo "committed=true" >> $GITHUB_OUTPUT
+            echo "data_date=${DATA_DATE}" >> $GITHUB_OUTPUT
           fi
-          git commit -m "data: 郵便番号データを ${DATA_DATE} 版に更新"
-          git push origin develop
 
-          # Create PR develop → master (skip if one already exists)
+      - name: Create PR
+        if: ${{ steps.generate_db.outputs.committed == 'true' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          DATA_DATE="${{ steps.generate_db.outputs.data_date }}"
+
           EXISTING_PR=$(gh pr list --base master --head develop --state open --json number --jq '.[0].number')
           if [ -n "$EXISTING_PR" ]; then
             echo "PR #${EXISTING_PR} is already open; skipping creation"
             exit 0
           fi
+
           gh pr create \
             --base master \
             --head develop \
