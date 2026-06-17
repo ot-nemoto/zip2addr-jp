@@ -1,6 +1,8 @@
 name: Build and Release (with DB)
 
 on:
+  push:
+    branches: master
   workflow_dispatch:
 
 jobs:
