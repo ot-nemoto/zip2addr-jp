@@ -32,7 +32,7 @@ zip2addr-jp/
 │   ├── api.py              # 検索ロジック（lookup 関数、Zip2AddrService クラス）
 │   ├── cli.py              # CLI エントリーポイント
 │   ├── models.py           # Zip2Addr データクラス
-│   └── zip2addr.db         # 同梱 SQLite データベース
+│   └── zip2addr.db         # 同梱 SQLite データベース（CI で生成・コミット）
 ├── tests/                  # テスト
 │   ├── conftest.py
 │   ├── test_api.py
