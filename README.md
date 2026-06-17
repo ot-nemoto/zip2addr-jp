@@ -1,103 +1,41 @@
 # zip2addr-jp
 
-日本の郵便番号から住所を高速に検索する Python ライブラリ。日本郵便の公開データを使用し、パッケージに SQLite データベースを同梱しているため、インストール後すぐに利用できます。
+日本の郵便番号から住所を高速に検索する Python ライブラリ。日本郵便の公開データを SQLite データベースとしてパッケージに同梱し、インストール後すぐに利用できます。
 
-## インストール
+## 機能
 
-[GitHub Releases](https://github.com/ot-nemoto/zip2addr-jp/releases) から最新版をダウンロードしてインストールしてください。
+- 郵便番号から住所を検索（全候補を返す）
+- ハイフン・全角数字など柔軟な入力形式に対応
+- CLI から JSON 形式で出力
+- 外部依存なし（Python 標準ライブラリのみ）
+- 月次の自動データ更新チェック
 
-```bash
-# 例: v0.3.0 の場合
-pip install https://github.com/ot-nemoto/zip2addr-jp/releases/download/v0.3.0/zip2addr_jp-0.3.0-py3-none-any.whl
-```
+## ドキュメント
 
-または、リリースページから wheel ファイル（`.whl`）をダウンロードして、ローカルからインストール：
+| ファイル | 内容 |
+|---------|------|
+| [docs/product.md](docs/product.md) | プロダクトの目的・対象ユーザー・成功指標 |
+| [docs/requirements.md](docs/requirements.md) | 機能要件・非機能要件 |
+| [docs/architecture.md](docs/architecture.md) | 技術スタック・ディレクトリ構成 |
+| [docs/development.md](docs/development.md) | 開発セットアップ・ブランチ運用・デプロイ手順 |
+| [docs/testing.md](docs/testing.md) | テスト方針・実行手順 |
+| [docs/e2e-scenarios.md](docs/e2e-scenarios.md) | E2E テストシナリオ |
+| [docs/tasks.md](docs/tasks.md) | タスク管理・フェーズ構成 |
 
-```bash
-pip install ./zip2addr_jp-0.3.0-py3-none-any.whl
-```
-
-## 使い方
-
-### Python（API）
-
-```python
-from zip2addr import lookup
-
-# 郵便番号を検索（リストで全候補を返す）
-results = lookup('100-0001')
-
-for addr in results:
-    print(f"都道府県: {addr.prefecture}")
-    print(f"市区町村: {addr.city}")
-    print(f"町村名: {addr.town}")
-    print()
-
-# 1件の場合は辞書に変換
-if len(results) == 1:
-    print(results[0].to_dict())
-```
-
-**対応する郵便番号の形式：**
-
-- ハイフン付き：`100-0001`
-- ハイフンなし：`1000001`
-- 全角数字：`１００－０００１`
-
-### コマンドライン（CLI）
+## クイックスタート
 
 ```bash
-# 郵便番号で住所を検索
+# 最新版をインストール（GitHub Releases から）
+pip install https://github.com/ot-nemoto/zip2addr-jp/releases/latest/download/zip2addr_jp-$(curl -s https://api.github.com/repos/ot-nemoto/zip2addr-jp/releases/latest | grep tag_name | cut -d'"' -f4 | sed 's/^v//')-py3-none-any.whl
+
+# CLI で検索
 zip2addr 1000001
 
-# JSON 形式で出力
-# {"zipcode": "1000001", "prefecture": "東京都", "city": "千代田区", "town": "千代田", ...}
-
-# バージョン確認
-zip2addr --version
-
-# デバッグログを表示（開発時）
-zip2addr 1000001 --debug
+# Python API
+python -c "from zip2addr import lookup; print(lookup('1000001'))"
 ```
 
-## 特徴
-
-- **インストール後すぐに利用可能** — データベースはパッケージに同梱
-- **複数候補に対応** — 同一郵便番号に複数の住所が存在する場合、すべて返す
-- **柔軟な入力形式** — ハイフン、全角数字などの各種形式に対応
-- **JSON 出力** — CLI からは JSON 形式で結果を出力
-- **軽量** — 外部依存なし
-
-## データ情報
-
-- **データ提供元** — 日本郵便（utf_ken_all.csv）
-- **更新方法** — リリース時にデータを更新します（リリースノートで確認可能）
-- **データベース** — SQLite 形式（zipcode でインデックス最適化）
-
-## API リファレンス
-
-### `lookup(postal_code: str) -> list[Zip2Addr]`
-
-郵便番号を検索し、該当する全ての住所候補をリストで返します。
-
-**パラメータ：**
-
-- `postal_code` (str) — 郵便番号（ハイフン有無、全半角を自動正規化）
-
-**戻り値：**
-
-- `list[Zip2Addr]` — 住所情報のリスト。見つからない場合は空リスト
-
-**Zip2Addr オブジェクトの属性：**
-
-- `zipcode` — 郵便番号
-- `prefecture` — 都道府県
-- `city` — 市区町村
-- `town` — 町村名
-- `pref_kana` — 都道府県（カナ）
-- `city_kana` — 市区町村（カナ）
-- `town_kana` — 町村名（カナ）
-- その他メタデータ（`jis_code`, `old_postal_code` など）
+詳細は [docs/development.md](docs/development.md) を参照。
 
 ## ライセンス
 
