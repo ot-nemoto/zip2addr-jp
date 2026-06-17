@@ -18,7 +18,8 @@ class TestCLIBasic:
             main(["--version"])
         assert exc_info.value.code == 0
         captured = capsys.readouterr()
-        assert "0.2.0" in captured.out or "0.0.0" in captured.out
+        from zip2addr import __version__
+        assert __version__ in captured.out
 
     def test_cli_help(self, capsys):
         """Test --help flag."""
