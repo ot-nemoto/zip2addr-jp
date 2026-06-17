@@ -75,8 +75,12 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          # Commit and push to develop
+          # Commit and push to develop (skip if no actual changes)
           git add src/zip2addr/zip2addr.db src/zip2addr/data_version.py
+          if git diff --cached --quiet; then
+            echo "No actual file changes after regeneration; skipping commit"
+            exit 0
+          fi
           git commit -m "data: 郵便番号データを ${DATA_DATE} 版に更新"
           git push origin develop
 
