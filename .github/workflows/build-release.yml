@@ -7,7 +7,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      DATA_URL: "https://www.post.japanpost.jp/zipcode/dl/utf/zip/utf_ken_all.zip"
+      DATA_URL: "https://www.post.japanpost.jp/service/search/zipcode/download/utf/zip/utf_ken_all.zip"
     permissions:
       contents: write
 
