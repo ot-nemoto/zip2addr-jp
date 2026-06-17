@@ -9,12 +9,14 @@ jobs:
   check:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
-      actions: write
+      contents: write
+      pull-requests: write
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: develop
 
       - name: Install tools
         run: |
@@ -24,7 +26,7 @@ jobs:
       - name: Download data and compute sha
         run: |
           set -euo pipefail
-          DATA_URL=https://www.post.japanpost.jp/zipcode/dl/utf/zip/utf_ken_all.zip
+          DATA_URL=https://www.post.japanpost.jp/service/search/zipcode/download/utf/zip/utf_ken_all.zip
           echo "Downloading ${DATA_URL}"
           curl -sSL -o utf_ken_all.zip "$DATA_URL"
           sha256sum utf_ken_all.zip | awk '{print $1}' > utf_ken_all.sha256
@@ -49,26 +51,45 @@ jobs:
           if [ -f prev_utf_ken_all.sha256 ] && cmp -s prev_utf_ken_all.sha256 utf_ken_all.sha256; then
             echo "no_change=true" >> $GITHUB_OUTPUT
             echo "No change in data; exiting"
-            exit 0
           fi
 
-      - name: Trigger build-release workflow
+      - name: Update DB and create PR
         if: ${{ steps.check_change.outputs.no_change != 'true' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
-          echo "Data changed — invoking build-release workflow"
-          REF_NAME="${{ github.ref_name || 'master' }}"
-          # POST and capture HTTP status
-          status=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
-            -H "Accept: application/vnd.github+json" \
-            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
-            https://api.github.com/repos/${REPO}/actions/workflows/build-release.yml/dispatches \
-            -d '{"ref":"refs/heads/'"${REF_NAME}"'"}') || true
-          echo "Dispatch HTTP status: ${status}"
-          if [ "${status}" = "403" ]; then
-            echo "ERROR: dispatch forbidden (403) — failing job"
-            exit 1
-          fi
+          echo "Data changed — updating DB and creating PR"
+
+          # Setup Python and generate DB
+          pip install --upgrade pip
+          unzip -o utf_ken_all.zip
+          python3 scripts/generate_db.py utf_ken_all.csv src/zip2addr/zip2addr.db
+
+          # Record data date
+          DATA_DATE=$(date +%Y%m%d)
+          cat > src/zip2addr/data_version.py <<PYEOF
+          DATA_DATE = "${DATA_DATE}"
+          PYEOF
+
+          # Configure git
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Commit and push to develop
+          git add src/zip2addr/zip2addr.db src/zip2addr/data_version.py
+          git commit -m "data: 郵便番号データを ${DATA_DATE} 版に更新"
+          git push origin develop
+
+          # Create PR develop → master
+          gh pr create \
+            --base master \
+            --head develop \
+            --title "data: 郵便番号データを ${DATA_DATE} 版に更新" \
+            --body "月次データチェックにより郵便番号データの更新を検出しました。
+
+          ## 変更内容
+          - \`src/zip2addr/zip2addr.db\` を最新の日本郵便データで再生成
+          - データ日付: ${DATA_DATE}
+
+          マージすると自動的に build-release が実行され、新しいリリースが作成されます。"
