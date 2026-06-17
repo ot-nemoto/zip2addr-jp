@@ -84,7 +84,12 @@ jobs:
           git commit -m "data: 郵便番号データを ${DATA_DATE} 版に更新"
           git push origin develop
 
-          # Create PR develop → master
+          # Create PR develop → master (skip if one already exists)
+          EXISTING_PR=$(gh pr list --base master --head develop --state open --json number --jq '.[0].number')
+          if [ -n "$EXISTING_PR" ]; then
+            echo "PR #${EXISTING_PR} is already open; skipping creation"
+            exit 0
+          fi
           gh pr create \
             --base master \
             --head develop \
