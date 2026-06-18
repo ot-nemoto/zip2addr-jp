@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: zip2addr-jp-api
+    runtime: python
+    plan: free
+    buildCommand: |
+      pip install -e .
+      pip install -r api/requirements.txt
+    startCommand: uvicorn api.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12"
