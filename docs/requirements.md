@@ -19,6 +19,12 @@
 - `--version` でバージョン表示
 - `--debug` でデバッグログ出力
 
+### REST API
+
+- `GET /api/v1/address/{postal_code}` — 郵便番号から住所を検索
+- `GET /api/v1/health` — ヘルスチェック
+- 詳細は [docs/api.md](api.md) を参照
+
 ### データ管理
 
 - 日本郵便の `utf_ken_all.csv` から SQLite データベースを生成する

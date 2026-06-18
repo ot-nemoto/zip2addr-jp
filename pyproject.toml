@@ -23,7 +23,7 @@ where = ["src"]
 zip2addr = ["*.db"]
 
 [project.optional-dependencies]
-test = ["pytest"]
+test = ["pytest", "httpx", "fastapi"]
 
 [tool.ruff]
 # Exclude a variety of commonly ignored directories.

@@ -7,7 +7,8 @@
 - 郵便番号から住所を検索（全候補を返す）
 - ハイフン・全角数字など柔軟な入力形式に対応
 - CLI から JSON 形式で出力
-- 外部依存なし（Python 標準ライブラリのみ）
+- REST API（FastAPI）で HTTP 経由の検索
+- 外部依存なし（ライブラリ本体は Python 標準ライブラリのみ）
 - 月次の自動データ更新チェック
 
 ## ドキュメント
@@ -20,6 +21,8 @@
 | [docs/development.md](docs/development.md) | 開発セットアップ・ブランチ運用・デプロイ手順 |
 | [docs/testing.md](docs/testing.md) | テスト方針・実行手順 |
 | [docs/e2e-scenarios.md](docs/e2e-scenarios.md) | E2E テストシナリオ |
+| [docs/api.md](docs/api.md) | REST API エンドポイント定義 |
+| [docs/infra.md](docs/infra.md) | インフラ構成・Render デプロイ手順 |
 | [docs/tasks.md](docs/tasks.md) | タスク管理・フェーズ構成 |
 
 ## クイックスタート

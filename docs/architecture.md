@@ -9,6 +9,9 @@
 | ビルド | setuptools + wheel |
 | テスト | pytest |
 | リンター | ruff |
+| API フレームワーク | FastAPI |
+| API サーバー | uvicorn |
+| ホスティング | Render (Free) |
 | CI/CD | GitHub Actions |
 
 ## ディレクトリ構成
@@ -24,6 +27,9 @@ zip2addr-jp/
 │   ├── auto-pr-to-master.yml  # develop → master 自動 PR
 │   ├── bump-version.yml    # バージョン自動バンプ
 │   └── release.yml         # master push 時のリリース作成
+├── api/                    # REST API サーバー
+│   ├── main.py             # FastAPI アプリケーション
+│   └── requirements.txt    # API サーバー用依存
 ├── docs/                   # ドキュメント
 ├── scripts/
 │   └── generate_db.py      # CSV → SQLite 変換スクリプト
@@ -40,6 +46,7 @@ zip2addr-jp/
 │   └── test_models.py
 ├── CLAUDE.md               # Claude Code 作業ルール
 ├── pyproject.toml          # プロジェクト設定・依存管理
+├── render.yaml             # Render Blueprint 定義
 └── README.md
 ```
 
