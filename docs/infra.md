@@ -51,5 +51,5 @@ Render は接続した GitHub リポジトリの develop ブランチへのプ�
 
 1. DNS → レコードの追加
 2. タイプ: `CNAME`、名前: `zip2addr-jp`、ターゲット: `zip2addr-jp-api.onrender.com`
-3. プロキシステータス: **DNS only**（Render の SSL と競合するため）
+3. プロキシステータス: **DNS only**（現時点では Render の SSL 証明書との互換性を優先し DNS only で運用）
 4. SSL 証明書は Render 側で自動発行される
