@@ -3,7 +3,8 @@
 ## 構成図
 
 ```
-[クライアント] → [Cloudflare DNS] → [Render] → [FastAPI + uvicorn] → [SQLite DB (同梱)]
+[クライアント] --名前解決--> [Cloudflare DNS]
+[クライアント] --HTTPS--> [Render] --> [FastAPI + uvicorn] --> [SQLite DB (同梱)]
 ```
 
 ## 環境一覧
