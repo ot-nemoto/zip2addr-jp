@@ -2,7 +2,7 @@
 
 ## ベース URL
 
-Render デプロイ後のベース URL は `https://<サービス名>.onrender.com` となる。
+`https://zip2addr-jp.nemoto.click`
 
 ## エンドポイント一覧
 
